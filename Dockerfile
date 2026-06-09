@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 
-# Build stage  (Swift 6.3.3 + jemalloc + persistent caches)
-FROM swift:6.3.3-noble AS build
+# Build stage  (Swift 6.3.2 + jemalloc + persistent caches)
+FROM swift:6.3.2-noble AS build
 
 # Static-link needs the development archive, not just the runtime .so
 RUN apt-get -q update \
