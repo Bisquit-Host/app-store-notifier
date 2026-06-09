@@ -1,91 +1,59 @@
-# ================================
-# Build image
-# ================================
-FROM swift:6.1-noble AS build
+# syntax=docker/dockerfile:1.6
 
-# Install OS updates
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get install -y libjemalloc-dev
+# Build stage  (Swift 6.3.3 + jemalloc + persistent caches)
+FROM swift:6.3.3-noble AS build
 
-# Set up a build area
+# Static-link needs the development archive, not just the runtime .so
+RUN apt-get -q update \
+ && apt-get -q install -y --no-install-recommends libjemalloc-dev \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /build
 
-# First just resolve dependencies.
-# This creates a cached layer that can be reused
-# as long as your Package.swift/Package.resolved
-# files do not change.
-COPY ./Package.* ./
-RUN swift package resolve \
-        $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
+# 1. Dependency resolution
+COPY Package.swift Package.resolved ./
+RUN --mount=type=cache,id=swiftpm,target=/root/.cache/swiftpm,sharing=locked \
+    swift package resolve --force-resolved-versions
 
-# Copy entire repo into container
-COPY . .
+# 2. Application sources
+COPY Sources ./Sources
+COPY Tests ./Tests
+COPY Public ./Public
 
-RUN mkdir /staging
-
-# Build the application, with optimizations, with static linking, and using jemalloc
-# N.B.: The static version of jemalloc is incompatible with the static Swift runtime.
-RUN --mount=type=cache,target=/build/.build \
+# 3. Compile and stage the artifacts in one step
+RUN --mount=type=cache,id=swift-build,target=/build/.build,sharing=locked \
     swift build -c release \
         --product AppStoreNotifier \
         --static-swift-stdlib \
-        -Xlinker -ljemalloc && \
-    # Copy main executable to staging area
-    cp "$(swift build -c release --show-bin-path)/AppStoreNotifier" /staging && \
-    # Copy resources bundled by SPM to staging area
-    find -L "$(swift build -c release --show-bin-path)" -regex '.*\.resources$' -exec cp -Ra {} /staging \;
+        -Xlinker -ljemalloc \
+ && mkdir -p /stage \
+ && cp "$(find .build -path '*/release/AppStoreNotifier' -type f -perm -111 | head -n 1)" /stage/ \
+ && cp /usr/libexec/swift/linux/swift-backtrace-static /stage/ \
+ && find -L .build -path '*/release/*.resources' -exec cp -Ra {} /stage/ \; \
+ && if [ -d Public ]; then mv Public /stage/Public && chmod -R a-w /stage/Public; fi
 
-
-# Switch to the staging area
-WORKDIR /staging
-
-# Copy static swift backtracer binary to staging area
-RUN cp "/usr/libexec/swift/linux/swift-backtrace-static" ./
-
-# Copy any resources from the public directory and views directory if the directories exist
-# Ensure that by default, neither the directory nor any of its contents are writable.
-RUN [ -d /build/Public ] && { mv /build/Public ./Public && chmod -R a-w ./Public; } || true
-RUN [ -d /build/Resources ] && { mv /build/Resources ./Resources && chmod -R a-w ./Resources; } || true
-
-# ================================
-# Run image
-# ================================
+# Runtime stage  (tiny Ubuntu image)
 FROM ubuntu:noble
 
-# Make sure all system packages are up to date, and install only essential packages.
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get -q install -y \
-      libjemalloc2 \
-      ca-certificates \
-      tzdata \
-# If your app or its dependencies import FoundationNetworking, also install `libcurl4`.
-      # libcurl4 \
-# If your app or its dependencies import FoundationXML, also install `libxml2`.
-      # libxml2 \
-    && rm -r /var/lib/apt/lists/*
+RUN apt-get -q update \
+ && apt-get -q install -y --no-install-recommends \
+        libjemalloc2 \
+        ca-certificates \
+        tzdata \
+ && rm -rf /var/lib/apt/lists/*
 
-# Create a vapor user and group with /app as its home directory
+# Non-root user
 RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
-
-# Switch to the new home directory
 WORKDIR /app
 
-# Copy built executable and any staged resources from builder
-COPY --from=build --chown=vapor:vapor /staging /app
+# Copy the staged artifacts from the builder
+COPY --from=build --chown=vapor:vapor /stage /app
 
-# Provide configuration needed by the built-in crash reporter and some sensible default behaviors.
+# Enable Swift crash backtraces
 ENV SWIFT_BACKTRACE=enable=yes,sanitize=yes,threads=all,images=all,interactive=no,swift-backtrace=./swift-backtrace-static
 
-# Ensure all further commands run as the vapor user
 USER vapor:vapor
+EXPOSE 1999
 
-# Let Docker bind to port 8080
-EXPOSE 8080
-
-# Start the Vapor service when the image is run, default to listening on 8080 in production environment
 ENTRYPOINT ["./AppStoreNotifier"]
-CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "1999"]
