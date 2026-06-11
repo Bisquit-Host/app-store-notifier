@@ -1,4 +1,5 @@
 import Vapor
+import Fluent
 import Logging
 import NIOCore
 import NIOPosix
@@ -20,6 +21,9 @@ enum Entrypoint {
         
         do {
             try await configure(app)
+            if shouldMigrateOnStart {
+                try await app.autoMigrate()
+            }
             try await app.execute()
         } catch {
             app.logger.report(error: error)
@@ -27,5 +31,10 @@ enum Entrypoint {
             throw error
         }
         try await app.asyncShutdown()
+    }
+
+    private static var shouldMigrateOnStart: Bool {
+        Environment.get("MIGRATE_ON_START").flatMap(Bool.init) == true &&
+            CommandLine.arguments.contains("serve")
     }
 }

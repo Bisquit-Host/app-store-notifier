@@ -37,6 +37,8 @@ Run migrations before receiving notifications:
 swift run AppStoreNotifier migrate
 ```
 
+Docker starts with `MIGRATE_ON_START=true` by default, so the app runs pending migrations before serving traffic. Set `MIGRATE_ON_START=false` to manage migrations manually
+
 Configure App Store Server Notification verification:
 
 ```bash

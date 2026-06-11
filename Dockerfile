@@ -51,6 +51,7 @@ COPY --from=build --chown=vapor:vapor /stage /app
 
 # Enable Swift crash backtraces
 ENV SWIFT_BACKTRACE=enable=yes,sanitize=yes,threads=all,images=all,interactive=no,swift-backtrace=./swift-backtrace-static
+ENV MIGRATE_ON_START=true
 
 USER vapor:vapor
 EXPOSE 1999
