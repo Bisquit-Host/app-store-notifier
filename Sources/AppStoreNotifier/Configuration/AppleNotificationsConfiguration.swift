@@ -42,7 +42,9 @@ struct AppleNotificationsConfiguration: Sendable {
     }
 
     private static func bundledRootCertificates() throws -> [Data] {
-        guard let url = Bundle.module.url(forResource: "AppleRootCA-G3", withExtension: "cer", subdirectory: "Certificates") else {
+        let url = Bundle.module.url(forResource: "AppleRootCA-G3", withExtension: "cer")
+            ?? Bundle.module.url(forResource: "AppleRootCA-G3", withExtension: "cer", subdirectory: "Certificates")
+        guard let url else {
             return []
         }
 
