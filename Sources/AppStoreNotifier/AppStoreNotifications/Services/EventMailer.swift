@@ -1,3 +1,4 @@
+import Smtp
 import Vapor
 
 struct EventMailer: Sendable {
@@ -17,7 +18,8 @@ struct EventMailer: Sendable {
         }
 
         let message = EmailMessage(
-            from: configuration.from,
+            fromAddress: configuration.fromAddress,
+            fromName: configuration.fromName,
             recipients: configuration.recipients,
             subject: subject(for: event),
             text: body(for: event)
@@ -30,26 +32,8 @@ struct EventMailer: Sendable {
                 "notificationUUID": .string(event.notificationUUID ?? "unknown"),
                 "subject": .string(message.subject)
             ])
-        case .mailgun(let apiKey, let domain):
-            try await send(message, apiKey: apiKey, domain: domain, on: request)
-        }
-    }
-
-    private func send(_ message: EmailMessage, apiKey: String, domain: String, on request: Request) async throws {
-        var headers = HTTPHeaders()
-        headers.basicAuthorization = BasicAuthorization(username: "api", password: apiKey)
-
-        let response = try await request.client.post(URI(string: "https://api.mailgun.net/v3/\(domain)/messages"), headers: headers) { clientRequest in
-            try clientRequest.content.encode(MailgunMessage(
-                from: message.from.value,
-                to: message.recipients.map(\.value).joined(separator: ","),
-                subject: message.subject,
-                text: message.text
-            ), as: .urlEncodedForm)
-        }
-
-        guard response.status.code >= 200 && response.status.code < 300 else {
-            throw Abort(.badGateway, reason: "Mailgun rejected App Store notification email with status \(response.status.code)")
+        case .smtp:
+            try await send(message, on: request)
         }
     }
 
@@ -72,18 +56,29 @@ struct EventMailer: Sendable {
             "Signed date: \(event.signedDate?.description ?? "unknown")"
         ].joined(separator: "\n")
     }
+
+    private func send(_ message: EmailMessage, on request: Request) async throws {
+        let email = try Email(
+            from: EmailAddress(
+                address: message.fromAddress,
+                name: MailHeaderEncoder.encode(message.fromName)
+            ),
+            to: message.recipients.map { EmailAddress(address: $0) },
+            subject: MailHeaderEncoder.encode(message.subject),
+            body: message.text,
+            isBodyHtml: false
+        )
+
+        try await request.send(email) { result in
+            request.logger.info("Email sending result: \(result)")
+        }
+    }
 }
 
 private struct EmailMessage: Sendable {
-    let from: EmailAddress
-    let recipients: [EmailAddress]
-    let subject: String
-    let text: String
-}
-
-private struct MailgunMessage: Content {
-    let from: String
-    let to: String
+    let fromAddress: String
+    let fromName: String
+    let recipients: [String]
     let subject: String
     let text: String
 }

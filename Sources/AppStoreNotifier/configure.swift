@@ -1,6 +1,7 @@
 import Vapor
 import Fluent
 import AppStoreServerLibrary
+import Smtp
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -8,6 +9,9 @@ public func configure(_ app: Application) async throws {
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     try PostgresConfiguration.configure(app)
+    if let smtpConfiguration = try Environment.smtpConfiguration() {
+        app.smtp.configuration = smtpConfiguration
+    }
     app.migrations.add(CreateAppStoreNotificationEvent())
 
     if

@@ -73,16 +73,19 @@ Optional query filters are `type`, `productId`, `transactionId`, `environment`, 
 
 ## Mail
 
-Mail is sent only for selected notification types. Without a supported transport, matching mails are logged
+Mail is sent only for selected notification types. Without SMTP configuration, matching mails are logged
 
 ```bash
-MAIL_FROM=app-store@example.com
+SMTP_HOSTNAME=smtp.example.com
+SMTP_USERNAME=app-store@example.com
+SMTP_PASSWORD=secret
+SMTP_FROM_NAME="App Store Notifier"
+SMTP_PORT=587
 MAIL_TO=ops@example.com,finance@example.com
 MAIL_EVENT_TYPES=REFUND,REVOKE,DID_FAIL_TO_RENEW,EXPIRED
-MAILER_PROVIDER=mailgun
-MAILGUN_API_KEY=key-example
-MAILGUN_DOMAIN=mg.example.com
 ```
+
+`MAIL_FROM` can be set to override the sender address. Otherwise `SMTP_USERNAME` is used
 
 ### See more
 

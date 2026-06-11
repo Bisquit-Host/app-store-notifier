@@ -2,13 +2,14 @@ import Vapor
 
 struct MailerConfiguration: Sendable {
     let enabledEventTypes: Set<String>
-    let from: EmailAddress
-    let recipients: [EmailAddress]
+    let fromAddress: String
+    let fromName: String
+    let recipients: [String]
     let transport: MailTransport
 
     static func load() -> MailerConfiguration? {
         guard
-            let fromRaw = Environment.get("MAIL_FROM"),
+            let fromRaw = Environment.get("MAIL_FROM") ?? Environment.get("SMTP_USERNAME"),
             let recipientsRaw = Environment.get("MAIL_TO")
         else {
             return nil
@@ -16,8 +17,8 @@ struct MailerConfiguration: Sendable {
 
         let recipients = recipientsRaw
             .split(separator: ",")
-            .map { EmailAddress($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-            .filter { !$0.value.isEmpty }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
 
         guard !recipients.isEmpty else {
             return nil
@@ -28,7 +29,8 @@ struct MailerConfiguration: Sendable {
 
         return MailerConfiguration(
             enabledEventTypes: enabledEventTypes,
-            from: EmailAddress(fromRaw),
+            fromAddress: fromRaw,
+            fromName: Environment.get("SMTP_FROM_NAME") ?? "App Store Notifier",
             recipients: recipients,
             transport: MailTransport.load()
         )
@@ -52,27 +54,15 @@ struct MailerConfiguration: Sendable {
     }
 }
 
-struct EmailAddress: Sendable {
-    let value: String
-
-    init(_ value: String) {
-        self.value = value
-    }
-}
-
 enum MailTransport: Sendable {
     case logOnly
-    case mailgun(apiKey: String, domain: String)
+    case smtp
 
     static func load() -> MailTransport {
-        guard
-            Environment.get("MAILER_PROVIDER")?.lowercased() == "mailgun",
-            let apiKey = Environment.get("MAILGUN_API_KEY"),
-            let domain = Environment.get("MAILGUN_DOMAIN")
-        else {
+        guard Environment.smtpConfigurationAvailable else {
             return .logOnly
         }
 
-        return .mailgun(apiKey: apiKey, domain: domain)
+        return .smtp
     }
 }

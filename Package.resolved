@@ -1,5 +1,5 @@
 {
-  "originHash" : "9161b98d3a14da02663173e2aa73149f832d4811023c01d0b87e2e98ded0f1ab",
+  "originHash" : "e9ecc39793ea43335fd73bcd50c6377b866a3a092190cb29a32377de89736e39",
   "pins" : [
     {
       "identity" : "app-store-server-library-swift",
@@ -107,6 +107,15 @@
       "state" : {
         "revision" : "1a10ccea61e4248effd23b6e814999ce7bdf0ee0",
         "version" : "4.9.3"
+      }
+    },
+    {
+      "identity" : "smtp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Mikroservices/Smtp.git",
+      "state" : {
+        "revision" : "2f77e5cc35778976a403752fcd74682c4cb5c5f4",
+        "version" : "3.1.2"
       }
     },
     {
