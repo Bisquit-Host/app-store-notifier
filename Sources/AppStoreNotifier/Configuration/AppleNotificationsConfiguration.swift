@@ -15,9 +15,9 @@ struct AppleNotificationsConfiguration: Sendable {
 
         let appAppleId = Environment.get("APPLE_APP_APPLE_ID").flatMap(Int64.init)
         let enableOnlineChecks = Environment.get("APPLE_ENABLE_ONLINE_CHECKS").flatMap(Bool.init) ?? true
-        let certificates = try rootCertificates(from: Environment.get("APPLE_ROOT_CERTIFICATE_PATHS"))
+        let certificates = try rootCertificates(from: Environment.get("APPLE_ROOT_CERTIFICATE_PATHS")) ?? bundledRootCertificates()
         guard !certificates.isEmpty else {
-            throw Abort(.internalServerError, reason: "APPLE_ROOT_CERTIFICATE_PATHS must include at least one Apple root certificate")
+            throw Abort(.internalServerError, reason: "At least one Apple root certificate must be bundled or configured with APPLE_ROOT_CERTIFICATE_PATHS")
         }
 
         return AppleNotificationsConfiguration(
@@ -29,9 +29,9 @@ struct AppleNotificationsConfiguration: Sendable {
         )
     }
 
-    private static func rootCertificates(from rawValue: String?) throws -> [Data] {
+    private static func rootCertificates(from rawValue: String?) throws -> [Data]? {
         guard let rawValue, !rawValue.isEmpty else {
-            return []
+            return nil
         }
 
         return try rawValue
@@ -39,5 +39,13 @@ struct AppleNotificationsConfiguration: Sendable {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .map { try Data(contentsOf: URL(fileURLWithPath: $0)) }
+    }
+
+    private static func bundledRootCertificates() throws -> [Data] {
+        guard let url = Bundle.module.url(forResource: "AppleRootCA-G3", withExtension: "cer", subdirectory: "Certificates") else {
+            return []
+        }
+
+        return [try Data(contentsOf: url)]
     }
 }

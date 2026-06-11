@@ -42,9 +42,10 @@ Configure App Store Server Notification verification:
 ```bash
 APPLE_BUNDLE_ID=com.example.app
 APPLE_APP_APPLE_ID=1234567890
-APPLE_ROOT_CERTIFICATE_PATHS=/path/to/AppleRootCA-G3.cer,/path/to/AppleRootCA-G4.cer
 APPLE_ENABLE_ONLINE_CHECKS=true
 ```
+
+The Apple Root CA - G3 certificate is bundled with the app. To override the bundled certificate, set `APPLE_ROOT_CERTIFICATE_PATHS` to a comma-separated list of certificate paths.
 
 Receive App Store Server Notifications V2 at separate endpoints:
 
