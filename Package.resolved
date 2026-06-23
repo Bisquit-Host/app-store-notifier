@@ -1,5 +1,5 @@
 {
-  "originHash" : "e9ecc39793ea43335fd73bcd50c6377b866a3a092190cb29a32377de89736e39",
+  "originHash" : "ac49dbc0f7f2b2792dd7c52d66e56f7a4d855ee71ced8605b7af763b47b1f7e2",
   "pins" : [
     {
       "identity" : "app-store-server-library-swift",
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-certificates.git",
       "state" : {
-        "revision" : "bde8ca32a096825dfce37467137c903418c1893d",
-        "version" : "1.19.1"
+        "revision" : "eaa10d47d19919979dd8df22ff4fd6349b1108d4",
+        "version" : "1.19.2"
       }
     },
     {
@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "77b84ac2cd2ac9e4ac67d19f045fd5b434f56967",
-        "version" : "2.101.0"
+        "revision" : "a8e036cb8628fcc1ff67dfec6ce8168617172c9b",
+        "version" : "2.101.1"
       }
     },
     {
@@ -321,8 +321,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "669763cfd5806a67e21972d7e5e2d6b80b1ea985",
-        "version" : "1.6.5"
+        "revision" : "7502b711c92a17741fa625d722b0ccbd595d8ed1",
+        "version" : "1.7.2"
       }
     },
     {

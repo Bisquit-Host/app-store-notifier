@@ -7,16 +7,25 @@ let package = Package(
        .macOS(.v13)
     ],
     dependencies: [
-        // 💧 A server-side Swift web framework.
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.115.0"),
+        // Web framework
+        // https://github.com/vapor/vapor
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.121.0"),
         
+        // https://github.com/apple/app-store-server-library-swift
         .package(url: "https://github.com/apple/app-store-server-library-swift.git", .upToNextMajor(from: "6.0.0")),
+        
+        // https://github.com/vapor/fluent
         .package(url: "https://github.com/vapor/fluent.git", from: "4.12.0"),
+        
+        // https://github.com/vapor/fluent-postgres-driver
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.10.0"),
+        
+        // https://github.com/Mikroservices/Smtp
         .package(url: "https://github.com/Mikroservices/Smtp.git", from: "3.1.2"),
         
-        // 🔵 Non-blocking, event-driven networking for Swift. Used for custom executors
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0")
+        // Networking
+        // https://github.com/apple/swift-nio
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.101.0")
     ],
     targets: [
         .executableTarget(
