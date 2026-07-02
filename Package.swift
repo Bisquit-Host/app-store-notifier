@@ -9,7 +9,7 @@ let package = Package(
     dependencies: [
         // Web framework
         // https://github.com/vapor/vapor
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.121.0"),
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.122.0"),
         
         // https://github.com/apple/app-store-server-library-swift
         .package(url: "https://github.com/apple/app-store-server-library-swift.git", .upToNextMajor(from: "6.0.0")),
