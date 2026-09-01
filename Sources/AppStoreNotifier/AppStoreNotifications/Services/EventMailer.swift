@@ -61,7 +61,7 @@ struct EventMailer: Sendable {
         return "App Store \(type)\(product)"
     }
 
-    private func body(for event: AppStoreNotificationEvent) -> String {
+    func body(for event: AppStoreNotificationEvent) -> String {
         [
             "Notification type: \(event.notificationType ?? "unknown")",
             "Subtype: \(event.subtype ?? "none")",
@@ -69,6 +69,9 @@ struct EventMailer: Sendable {
             "Environment: \(event.environment ?? "unknown")",
             "Bundle ID: \(event.bundleId ?? "unknown")",
             "Product ID: \(event.productId ?? "unknown")",
+            "App account token: \(event.appAccountToken?.uuidString.lowercased() ?? "not provided")",
+            "Billing user ID: \(BillingAppAccountToken.userID(from: event.appAccountToken).map(String.init) ?? "unknown")",
+            "Consumption request reason: \(event.consumptionRequestReason ?? "none")",
             "Transaction ID: \(event.transactionId ?? "unknown")",
             "Original transaction ID: \(event.originalTransactionId ?? "unknown")",
             "Signed date: \(event.signedDate?.description ?? "unknown")"

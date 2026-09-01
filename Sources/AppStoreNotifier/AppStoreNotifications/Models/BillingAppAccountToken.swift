@@ -1,0 +1,34 @@
+import Foundation
+
+enum BillingAppAccountToken {
+    static func token(for userID: Int64) -> UUID? {
+        guard userID > 0 else { return nil }
+
+        let userIDString = String(userID)
+        let compactToken = String(repeating: "0", count: 32 - userIDString.count) + userIDString
+        let tokenString = [
+            String(compactToken.prefix(8)),
+            String(compactToken.dropFirst(8).prefix(4)),
+            String(compactToken.dropFirst(12).prefix(4)),
+            String(compactToken.dropFirst(16).prefix(4)),
+            String(compactToken.dropFirst(20).prefix(12))
+        ].joined(separator: "-")
+
+        return UUID(uuidString: tokenString)
+    }
+
+    static func userID(from token: UUID?) -> Int64? {
+        guard let token else { return nil }
+
+        let compactToken = token.uuidString.replacing("-", with: "")
+        guard compactToken.allSatisfy(\.isNumber),
+              let userID = Int64(compactToken),
+              userID > 0,
+              self.token(for: userID) == token
+        else {
+            return nil
+        }
+
+        return userID
+    }
+}

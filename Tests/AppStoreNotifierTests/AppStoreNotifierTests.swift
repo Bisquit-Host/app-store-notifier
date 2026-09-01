@@ -74,4 +74,28 @@ struct AppStoreNotifierTests {
         #expect(!json.contains("transaction-secret"))
         #expect(!json.contains("renewal-secret"))
     }
+
+    @Test("Mail includes purchase account context")
+    func mailIncludesPurchaseAccountContext() {
+        let token = UUID(uuidString: "00000000-0000-0000-0000-000000000123")
+        let event = AppStoreNotificationEvent(verificationStatus: "valid")
+        event.appAccountToken = token
+        event.consumptionRequestReason = "UNINTENDED_PURCHASE"
+
+        let body = EventMailer(configuration: nil).body(for: event)
+
+        #expect(body.contains("App account token: 00000000-0000-0000-0000-000000000123"))
+        #expect(body.contains("Billing user ID: 123"))
+        #expect(body.contains("Consumption request reason: UNINTENDED_PURCHASE"))
+    }
+
+    @Test("Billing user IDs round trip through App Store account tokens")
+    func billingUserIdRoundTrip() {
+        let token = BillingAppAccountToken.token(for: 123)
+
+        #expect(token?.uuidString.lowercased() == "00000000-0000-0000-0000-000000000123")
+        #expect(BillingAppAccountToken.userID(from: token) == 123)
+        #expect(BillingAppAccountToken.token(for: 0) == nil)
+        #expect(BillingAppAccountToken.userID(from: UUID()) == nil)
+    }
 }

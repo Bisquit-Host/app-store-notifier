@@ -71,7 +71,9 @@ GET /app-store/notifications/events
 GET /app-store/notifications/events/{notificationUUID}
 ```
 
-Optional query filters are `type`, `productId`, `transactionId`, `environment`, `verificationStatus`, `mailStatus`, and `limit`. Responses intentionally omit raw signed and decoded payloads
+Optional query filters are `type`, `productId`, `transactionId`, `appAccountToken`, `environment`, `verificationStatus`, `mailStatus`, and `limit`. Responses intentionally omit raw signed and decoded payloads
+
+For notifications to identify an account in your own system, the app encodes the positive decimal billing user ID into a zero-padded UUID. For example, user `123` becomes `00000000-0000-0000-0000-000000000123`. The notifier decodes this value and includes the billing user ID in event emails and API responses. Apple doesn't provide the customer's Apple ID or email address
 
 ## Mail
 

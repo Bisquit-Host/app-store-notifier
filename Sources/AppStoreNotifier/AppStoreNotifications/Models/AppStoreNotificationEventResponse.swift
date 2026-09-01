@@ -15,6 +15,9 @@ struct AppStoreNotificationEventResponse: Content {
     let transactionId: String?
     let originalTransactionId: String?
     let productId: String?
+    let appAccountToken: UUID?
+    let billingUserId: Int64?
+    let consumptionRequestReason: String?
     let purchaseDate: Date?
     let expiresDate: Date?
     let renewalDate: Date?
@@ -40,6 +43,9 @@ struct AppStoreNotificationEventResponse: Content {
         transactionId = event.transactionId
         originalTransactionId = event.originalTransactionId
         productId = event.productId
+        appAccountToken = event.appAccountToken
+        billingUserId = BillingAppAccountToken.userID(from: event.appAccountToken)
+        consumptionRequestReason = event.consumptionRequestReason
         purchaseDate = event.purchaseDate
         expiresDate = event.expiresDate
         renewalDate = event.renewalDate

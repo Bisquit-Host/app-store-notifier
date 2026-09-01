@@ -49,6 +49,12 @@ final class AppStoreNotificationEvent: Model, Content, @unchecked Sendable {
     @OptionalField(key: "product_id")
     var productId: String?
 
+    @OptionalField(key: "app_account_token")
+    var appAccountToken: UUID?
+
+    @OptionalField(key: "consumption_request_reason")
+    var consumptionRequestReason: String?
+
     @OptionalField(key: "subscription_group_identifier")
     var subscriptionGroupIdentifier: String?
 

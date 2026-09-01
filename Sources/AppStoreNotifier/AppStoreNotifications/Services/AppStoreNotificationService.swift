@@ -93,6 +93,7 @@ struct AppStoreNotificationService: Sendable {
             event.originalTransactionId = transaction.originalTransactionId
             event.webOrderLineItemId = transaction.webOrderLineItemId
             event.productId = transaction.productId
+            event.appAccountToken = transaction.appAccountToken
             event.subscriptionGroupIdentifier = transaction.subscriptionGroupIdentifier
             event.purchaseDate = transaction.purchaseDate
             event.expiresDate = transaction.expiresDate
@@ -114,6 +115,7 @@ struct AppStoreNotificationService: Sendable {
         switch await verifier.verifyAndDecodeRenewalInfo(signedRenewalInfo: signedRenewalInfo) {
         case .valid(let renewalInfo):
             event.renewalDate = renewalInfo.renewalDate
+            event.appAccountToken = event.appAccountToken ?? renewalInfo.appAccountToken
             event.decodedRenewalInfo = try jsonString(from: renewalInfo)
         case .invalid(let error):
             event.verificationStatus = "invalid"
@@ -133,6 +135,7 @@ struct AppStoreNotificationService: Sendable {
             event.environment = data.rawEnvironment
             event.appAppleId = data.appAppleId
             event.bundleId = data.bundleId
+            event.consumptionRequestReason = data.rawConsumptionRequestReason
             return
         }
 

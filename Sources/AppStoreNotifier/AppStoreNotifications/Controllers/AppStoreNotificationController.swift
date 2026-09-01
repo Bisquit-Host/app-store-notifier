@@ -94,6 +94,13 @@ struct AppStoreNotificationController: RouteCollection {
             query = query.filter(\.$productId == productId)
         }
 
+        if let token = request.query[String.self, at: "appAccountToken"] {
+            guard let appAccountToken = UUID(uuidString: token) else {
+                throw Abort(.badRequest, reason: "appAccountToken must be a UUID")
+            }
+            query = query.filter(\.$appAccountToken == appAccountToken)
+        }
+
         if let environment = request.query[String.self, at: "environment"] {
             query = query.filter(\.$environment == environment)
         }

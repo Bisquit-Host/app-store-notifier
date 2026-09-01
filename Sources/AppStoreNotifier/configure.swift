@@ -19,6 +19,7 @@ public func configure(_ app: Application) async throws {
     app.asyncCommands.use(AppleTestNotificationStatusCommand(), as: "test-notification-status")
     app.migrations.add(CreateAppStoreNotificationEvent())
     app.migrations.add(AddMailDeliveryState())
+    app.migrations.add(AddPurchaseAccountContext())
 
     if
         let productionConfiguration = try AppleNotificationsConfiguration.load(environment: .production),
