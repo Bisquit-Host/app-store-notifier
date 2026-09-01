@@ -11,19 +11,79 @@ struct AppStoreNotificationController: RouteCollection {
     }
 
     private func receiveProduction(request: Request) async throws -> HTTPStatus {
-        let payload = try request.content.decode(AppStoreNotificationPayload.self)
-        _ = try await request.appStoreNotificationServices.production.handle(signedPayload: payload.signedPayload, on: request)
-        return .ok
+        try await receive(
+            environment: "production",
+            service: request.appStoreNotificationServices.production,
+            request: request
+        )
     }
 
     private func receiveSandbox(request: Request) async throws -> HTTPStatus {
-        let payload = try request.content.decode(AppStoreNotificationPayload.self)
-        _ = try await request.appStoreNotificationServices.sandbox.handle(signedPayload: payload.signedPayload, on: request)
-        return .ok
+        try await receive(
+            environment: "sandbox",
+            service: request.appStoreNotificationServices.sandbox,
+            request: request
+        )
     }
 
-    private func listEvents(request: Request) async throws -> [AppStoreNotificationEvent] {
-        let limit = min(request.query[Int.self, at: "limit"] ?? 100, 250)
+    private func receive(
+        environment: String,
+        service: AppStoreNotificationService,
+        request: Request
+    ) async throws -> HTTPStatus {
+        let start = ContinuousClock.now
+
+        do {
+            let payload = try request.content.decode(AppStoreNotificationPayload.self)
+            let result = try await service.handle(signedPayload: payload.signedPayload, on: request)
+            var metadata = baseMetadata(environment: environment, request: request, start: start)
+            metadata["bundle_id"] = .string(result.event.bundleId ?? "unknown")
+            metadata["duplicate"] = .stringConvertible(!result.inserted)
+            metadata["mail_status"] = .string(result.event.mailStatus ?? "unknown")
+            metadata["notification_type"] = .string(result.event.notificationType ?? "unknown")
+            metadata["notification_uuid"] = .string(result.event.notificationUUID ?? "unknown")
+            metadata["outcome"] = "success"
+            metadata["product_id"] = .string(result.event.productId ?? "unknown")
+            metadata["status_code"] = .stringConvertible(HTTPStatus.ok.code)
+            metadata["subtype"] = .string(result.event.subtype ?? "none")
+            metadata["transaction_id"] = .string(result.event.transactionId ?? "unknown")
+            request.logger.info("App Store notification processed", metadata: metadata)
+            return .ok
+        } catch {
+            var metadata = baseMetadata(environment: environment, request: request, start: start)
+            let status = (error as? any AbortError)?.status ?? .internalServerError
+            metadata["error_message_sanitized"] = .string(ErrorMessageSanitizer.message(for: error))
+            metadata["error_type"] = .string(String(reflecting: type(of: error)))
+            metadata["outcome"] = "error"
+            metadata["status_code"] = .stringConvertible(status.code)
+            request.logger.error("App Store notification failed", metadata: metadata)
+            throw error
+        }
+    }
+
+    private func baseMetadata(
+        environment: String,
+        request: Request,
+        start: ContinuousClock.Instant
+    ) -> Logger.Metadata {
+        let duration = start.duration(to: .now).components
+        let durationMilliseconds = duration.seconds * 1_000 + duration.attoseconds / 1_000_000_000_000_000
+
+        return [
+            "app_store_environment": .string(environment),
+            "deployment_environment": .string(request.application.environment.name),
+            "duration_ms": .stringConvertible(durationMilliseconds),
+            "event_name": "app_store_notification_request",
+            "http_method": .string(request.method.rawValue),
+            "operation": "receive_app_store_notification",
+            "request_id": .string(request.id),
+            "route": .string(request.route?.description ?? request.url.path),
+            "service": "app-store-notifier"
+        ]
+    }
+
+    private func listEvents(request: Request) async throws -> [AppStoreNotificationEventResponse] {
+        let limit = min(max(request.query[Int.self, at: "limit"] ?? 100, 1), 250)
         var query = AppStoreNotificationEvent.query(on: request.db)
 
         if let notificationType = request.query[String.self, at: "type"] {
@@ -38,6 +98,14 @@ struct AppStoreNotificationController: RouteCollection {
             query = query.filter(\.$environment == environment)
         }
 
+        if let verificationStatus = request.query[String.self, at: "verificationStatus"] {
+            query = query.filter(\.$verificationStatus == verificationStatus)
+        }
+
+        if let mailStatus = request.query[String.self, at: "mailStatus"] {
+            query = query.filter(\.$mailStatus == mailStatus)
+        }
+
         if let transactionId = request.query[String.self, at: "transactionId"] {
             query = query.group(.or) {
                 $0.filter(\.$transactionId == transactionId)
@@ -49,9 +117,10 @@ struct AppStoreNotificationController: RouteCollection {
             .sort(\.$createdAt, .descending)
             .limit(limit)
             .all()
+            .map(AppStoreNotificationEventResponse.init(event:))
     }
 
-    private func getEvent(request: Request) async throws -> AppStoreNotificationEvent {
+    private func getEvent(request: Request) async throws -> AppStoreNotificationEventResponse {
         guard let notificationUUID = request.parameters.get("notificationUUID") else {
             throw Abort(.badRequest, reason: "Missing notification UUID")
         }
@@ -63,10 +132,6 @@ struct AppStoreNotificationController: RouteCollection {
             throw Abort(.notFound)
         }
 
-        return event
+        return AppStoreNotificationEventResponse(event: event)
     }
-}
-
-private struct AppStoreNotificationPayload: Content {
-    let signedPayload: String
 }

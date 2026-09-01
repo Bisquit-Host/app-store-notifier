@@ -73,6 +73,18 @@ final class AppStoreNotificationEvent: Model, Content, @unchecked Sendable {
     @OptionalField(key: "decoded_renewal_info")
     var decodedRenewalInfo: String?
 
+    @OptionalField(key: "mail_status")
+    var mailStatus: String?
+
+    @OptionalField(key: "mail_error")
+    var mailError: String?
+
+    @OptionalField(key: "mail_attempted_at")
+    var mailAttemptedAt: Date?
+
+    @OptionalField(key: "mail_sent_at")
+    var mailSentAt: Date?
+
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
@@ -91,5 +103,6 @@ final class AppStoreNotificationEvent: Model, Content, @unchecked Sendable {
         self.verificationStatus = verificationStatus
         self.verificationError = verificationError
         self.rawSignedPayload = rawSignedPayload
+        self.mailStatus = EventMailDeliveryStatus.pending.rawValue
     }
 }

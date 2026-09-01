@@ -17,7 +17,7 @@ struct AppStoreNotificationService: Sendable {
         self.mailer = mailer
     }
 
-    func handle(signedPayload: String, on request: Request) async throws -> AppStoreNotificationEvent {
+    func handle(signedPayload: String, on request: Request) async throws -> AppStoreNotificationHandlingResult {
         let event = AppStoreNotificationEvent(
             verificationStatus: "pending",
             rawSignedPayload: signedPayload
@@ -35,11 +35,31 @@ struct AppStoreNotificationService: Sendable {
         event.verificationStatus = "valid"
         let (savedEvent, inserted) = try await save(event, on: request.db)
 
-        if inserted {
-            try await mailer.sendIfNeeded(for: savedEvent, on: request)
+        let mailStatus = savedEvent.mailStatus.flatMap(EventMailDeliveryStatus.init(rawValue:)) ?? .pending
+        if inserted || mailStatus.shouldRetry {
+            try await deliverMail(for: savedEvent, on: request)
         }
 
-        return savedEvent
+        return AppStoreNotificationHandlingResult(event: savedEvent, inserted: inserted)
+    }
+
+    private func deliverMail(for event: AppStoreNotificationEvent, on request: Request) async throws {
+        event.mailAttemptedAt = .now
+        event.mailError = nil
+
+        do {
+            let status = try await mailer.sendIfNeeded(for: event, on: request)
+            event.mailStatus = status.rawValue
+            if status == .sent {
+                event.mailSentAt = .now
+            }
+            try await event.update(on: request.db)
+        } catch {
+            event.mailStatus = EventMailDeliveryStatus.failed.rawValue
+            event.mailError = ErrorMessageSanitizer.message(for: error)
+            try await event.update(on: request.db)
+            throw error
+        }
     }
 
     private func verifyNotification(

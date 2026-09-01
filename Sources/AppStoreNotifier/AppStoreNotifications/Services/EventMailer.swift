@@ -8,13 +8,14 @@ struct EventMailer: Sendable {
         self.configuration = configuration
     }
 
-    func sendIfNeeded(for event: AppStoreNotificationEvent, on request: Request) async throws {
-        guard
-            let configuration,
-            let notificationType = event.notificationType,
-            configuration.enabledEventTypes.contains(notificationType)
-        else {
-            return
+    func sendIfNeeded(for event: AppStoreNotificationEvent, on request: Request) async throws -> EventMailDeliveryStatus {
+        guard let configuration else {
+            return .disabled
+        }
+
+        guard let notificationType = event.notificationType,
+              configuration.allows(notificationType: notificationType) else {
+            return .filtered
         }
 
         let message = EmailMessage(
@@ -27,14 +28,31 @@ struct EventMailer: Sendable {
 
         switch configuration.transport {
         case .logOnly:
-            request.logger.info("App Store notification email", metadata: [
-                "notificationType": .string(notificationType),
-                "notificationUUID": .string(event.notificationUUID ?? "unknown"),
-                "subject": .string(message.subject)
-            ])
+            return .logged
         case .smtp:
-            try await send(message, on: request)
+            try await send(message, on: request.application)
+            return .sent
         }
+    }
+
+    func sendTest(on application: Application) async throws -> Int {
+        guard let configuration else {
+            throw Abort(.serviceUnavailable, reason: "Mail is disabled because MAIL_TO or the sender address is missing")
+        }
+
+        guard configuration.transport == .smtp else {
+            throw Abort(.serviceUnavailable, reason: "SMTP is not fully configured")
+        }
+
+        let message = EmailMessage(
+            fromAddress: configuration.fromAddress,
+            fromName: configuration.fromName,
+            recipients: configuration.recipients,
+            subject: "App Store Notifier test",
+            text: "SMTP delivery from App Store Notifier is working"
+        )
+        try await send(message, on: application)
+        return message.recipients.count
     }
 
     private func subject(for event: AppStoreNotificationEvent) -> String {
@@ -57,7 +75,7 @@ struct EventMailer: Sendable {
         ].joined(separator: "\n")
     }
 
-    private func send(_ message: EmailMessage, on request: Request) async throws {
+    private func send(_ message: EmailMessage, on application: Application) async throws {
         let email = try Email(
             from: EmailAddress(
                 address: message.fromAddress,
@@ -69,9 +87,7 @@ struct EventMailer: Sendable {
             isBodyHtml: false
         )
 
-        try await request.send(email) { result in
-            request.logger.info("Email sending result: \(result)")
-        }
+        try await application.smtp.send(email)
     }
 }
 

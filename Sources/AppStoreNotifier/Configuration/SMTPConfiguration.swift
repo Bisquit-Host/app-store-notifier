@@ -14,15 +14,41 @@ extension Environment {
             return nil
         }
 
+        let port = try getInt("SMTP_PORT")
         return SmtpServerConfiguration(
             hostname: try getString("SMTP_HOSTNAME"),
-            port: try getInt("SMTP_PORT"),
+            port: port,
             signInMethod: .credentials(
                 username: try getString("SMTP_USERNAME"),
                 password: try getString("SMTP_PASSWORD")
             ),
+            secure: try smtpSecureChannel(port: port),
             helloMethod: .ehlo
         )
+    }
+
+    private static func smtpSecureChannel(port: Int) throws -> SmtpSecureChannel {
+        let defaultSecurity = switch port {
+        case 465: "ssl"
+        case 587: "starttls"
+        default: "none"
+        }
+
+        switch Environment.get("SMTP_SECURITY")?.lowercased() ?? defaultSecurity {
+        case "none":
+            return .none
+        case "ssl", "tls":
+            return .ssl
+        case "starttls":
+            return .startTls
+        case "starttls-when-available", "opportunistic":
+            return .startTlsWhenAvailable
+        default:
+            throw Abort(
+                .internalServerError,
+                reason: "SMTP_SECURITY must be none, ssl, starttls, or starttls-when-available"
+            )
+        }
     }
 
     static func getString(_ name: String) throws -> String {

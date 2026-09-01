@@ -1,7 +1,7 @@
 import Vapor
 
 struct MailerConfiguration: Sendable {
-    let enabledEventTypes: Set<String>
+    let enabledEventTypes: Set<String>?
     let fromAddress: String
     let fromName: String
     let recipients: [String]
@@ -25,7 +25,7 @@ struct MailerConfiguration: Sendable {
         }
 
         let enabledEventTypes = Environment.get("MAIL_EVENT_TYPES")
-            .map(Self.eventTypes(from:)) ?? Self.defaultEventTypes
+            .flatMap(Self.eventTypes(from:))
 
         return MailerConfiguration(
             enabledEventTypes: enabledEventTypes,
@@ -36,25 +36,25 @@ struct MailerConfiguration: Sendable {
         )
     }
 
-    private static let defaultEventTypes: Set<String> = [
-        "CONSUMPTION_REQUEST",
-        "DID_FAIL_TO_RENEW",
-        "EXPIRED",
-        "PRICE_INCREASE",
-        "REFUND",
-        "REFUND_DECLINED",
-        "REVOKE"
-    ]
+    func allows(notificationType: String) -> Bool {
+        enabledEventTypes?.contains(notificationType) ?? true
+    }
 
-    private static func eventTypes(from rawValue: String) -> Set<String> {
-        Set(rawValue
+    var eventTypeSummary: String {
+        enabledEventTypes?.sorted().joined(separator: ",") ?? "all"
+    }
+
+    static func eventTypes(from rawValue: String) -> Set<String>? {
+        let eventTypes = Set(rawValue
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() }
             .filter { !$0.isEmpty })
+
+        return eventTypes.contains("*") ? nil : eventTypes
     }
 }
 
-enum MailTransport: Sendable {
+enum MailTransport: Sendable, Equatable {
     case logOnly
     case smtp
 
@@ -64,5 +64,12 @@ enum MailTransport: Sendable {
         }
 
         return .smtp
+    }
+
+    var name: String {
+        switch self {
+        case .logOnly: "log_only"
+        case .smtp: "smtp"
+        }
     }
 }
