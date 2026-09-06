@@ -69,7 +69,6 @@ struct EventMailer: Sendable {
             "Environment: \(event.environment ?? "unknown")",
             "Bundle ID: \(event.bundleId ?? "unknown")",
             "Product ID: \(event.productId ?? "unknown")",
-            "App account token: \(event.appAccountToken?.uuidString.lowercased() ?? "not provided")",
             "Billing user ID: \(BillingAppAccountToken.userID(from: event.appAccountToken).map(String.init) ?? "unknown")",
             "Consumption request reason: \(event.consumptionRequestReason ?? "none")",
             "Transaction ID: \(event.transactionId ?? "unknown")",

@@ -84,7 +84,8 @@ struct AppStoreNotifierTests {
 
         let body = EventMailer(configuration: nil).body(for: event)
 
-        #expect(body.contains("App account token: 00000000-0000-0000-0000-000000000123"))
+        #expect(!body.contains("App account token:"))
+        #expect(!body.contains("00000000-0000-0000-0000-000000000123"))
         #expect(body.contains("Billing user ID: 123"))
         #expect(body.contains("Consumption request reason: UNINTENDED_PURCHASE"))
     }
