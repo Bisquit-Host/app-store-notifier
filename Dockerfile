@@ -22,14 +22,14 @@ COPY Public ./Public
 
 # 3. Compile and stage the artifacts in one step
 RUN --mount=type=cache,id=swift-build,target=/build/.build,sharing=locked \
-    swift build -c release \
+    swift build --build-system native -c release \
         --product AppStoreNotifier \
         --static-swift-stdlib \
         -Xlinker -ljemalloc \
  && mkdir -p /stage \
- && cp "$(find .build -path '*/release/AppStoreNotifier' -type f -perm -111 | head -n 1)" /stage/ \
+ && cp "$(swift build --build-system native -c release --show-bin-path)/AppStoreNotifier" /stage/ \
  && cp /usr/libexec/swift/linux/swift-backtrace-static /stage/ \
- && find -L .build -path '*/release/*.resources' -exec cp -Ra {} /stage/ \; \
+ && find -L "$(swift build --build-system native -c release --show-bin-path)/" -name '*.resources' -exec cp -Ra {} /stage/ \; \
  && if [ -d Public ]; then mv Public /stage/Public && chmod -R a-w /stage/Public; fi
 
 # Runtime stage  (tiny Ubuntu image)
