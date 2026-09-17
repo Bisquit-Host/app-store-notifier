@@ -1,5 +1,5 @@
 {
-  "originHash" : "593b23fa74762f999fdc510395c329db415a0834aec520f8c06132499cd929ef",
+  "originHash" : "926c0c232c84234b13acbe00b391209403bef295d76540bdbbb22eb7060aa9a4",
   "pins" : [
     {
       "identity" : "app-store-server-library-swift",
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-certificates.git",
       "state" : {
-        "revision" : "449dbbecd0f31e82b510ada227ca152caa8b5e98",
-        "version" : "1.19.4"
+        "revision" : "c8aece90ea05f9866bd392a5bf13b5cae56c0e03",
+        "version" : "1.20.0"
       }
     },
     {
@@ -222,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types.git",
       "state" : {
-        "revision" : "db774a277f60063a32d854f2980299caf06da041",
-        "version" : "1.6.0"
+        "revision" : "bff4b6903cdc99dda49649dd52f46c11cfd3ed50",
+        "version" : "1.8.0"
       }
     },
     {
@@ -276,8 +276,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-ssl.git",
       "state" : {
-        "revision" : "dea6ebb773fb4b140753d48f93c8d0084531fbd5",
-        "version" : "2.37.3"
+        "revision" : "03827c1a9fdb2b6b00a4e93ede8861520263af8c",
+        "version" : "2.37.4"
       }
     },
     {
@@ -330,8 +330,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/vapor.git",
       "state" : {
-        "revision" : "748ae8432a33e0965bbf0351fedd4e915e7f460c",
-        "version" : "4.122.0"
+        "revision" : "33e61d0a02a9ddc9f025f8398a0dc24774f6cbe1",
+        "version" : "4.122.2"
       }
     },
     {
