@@ -64,16 +64,9 @@ The request body must be the Apple payload:
 }
 ```
 
-Notification events are stored in `app_store_notification_events` and can be inspected with:
+Notification events are stored in `app_store_notification_events` for internal inspection through the database — there are no HTTP endpoints for reading events
 
-```http
-GET /app-store/notifications/events
-GET /app-store/notifications/events/{notificationUUID}
-```
-
-Optional query filters are `type`, `productId`, `transactionId`, `appAccountToken`, `environment`, `verificationStatus`, `mailStatus`, and `limit`. Responses intentionally omit raw signed and decoded payloads
-
-For notifications to identify an account in your own system, the app encodes the positive decimal billing user ID into a zero-padded UUID. For example, user `123` becomes `00000000-0000-0000-0000-000000000123`. The notifier decodes this value and includes the billing user ID in event emails and API responses. Apple doesn't provide the customer's Apple ID or email address
+For notifications to identify an account in your own system, the app encodes the positive decimal billing user ID into a zero-padded UUID. For example, user `123` becomes `00000000-0000-0000-0000-000000000123`. The notifier decodes this value and includes the billing user ID in event emails. Apple doesn't provide the customer's Apple ID or email address
 
 ## Mail
 
@@ -109,7 +102,7 @@ Production: https://YOUR_HOST/app-store/notifications/production
 Sandbox:    https://YOUR_HOST/app-store/notifications/sandbox
 ```
 
-Use an In-App Purchase API key with Apple's sandbox `Request a Test Notification` endpoint. Apple sends a signed `TEST` notification to the configured sandbox URL. The successful result appears in the events endpoint:
+Use an In-App Purchase API key with Apple's sandbox `Request a Test Notification` endpoint. Apple sends a signed `TEST` notification to the configured sandbox URL. Check the delivery report and service logs to confirm receipt
 
 Mount the downloaded In-App Purchase `.p8` key and configure:
 
@@ -126,11 +119,7 @@ swift run AppStoreNotifier request-test-notification --environment sandbox
 swift run AppStoreNotifier test-notification-status TEST_TOKEN --environment sandbox
 ```
 
-Finally inspect the event saved by this service:
-
-```http
-GET /app-store/notifications/events?type=TEST
-```
+Finally confirm a `TEST` notification in the service logs or inspect the saved event directly in the database
 
 ### See more
 

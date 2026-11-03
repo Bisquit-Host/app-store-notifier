@@ -55,24 +55,18 @@ struct AppStoreNotifierTests {
         #expect(!EventMailDeliveryStatus.filtered.shouldRetry)
     }
 
-    @Test("Event responses do not expose signed or decoded payloads")
-    func eventResponsesRedactPayloads() throws {
-        let event = AppStoreNotificationEvent(
-            notificationUUID: "notification-id",
-            verificationStatus: "valid",
-            rawSignedPayload: "signed-secret"
-        )
-        event.decodedPayload = "decoded-secret"
-        event.decodedTransaction = "transaction-secret"
-        event.decodedRenewalInfo = "renewal-secret"
-
-        let data = try JSONEncoder().encode(AppStoreNotificationEventResponse(event: event))
-        let json = String(decoding: data, as: UTF8.self)
-
-        #expect(!json.contains("signed-secret"))
-        #expect(!json.contains("decoded-secret"))
-        #expect(!json.contains("transaction-secret"))
-        #expect(!json.contains("renewal-secret"))
+    @Test("Event read endpoints are unavailable", arguments: [
+        "/app-store/notifications/events",
+        "/app-store/notifications/events/00000000-0000-0000-0000-000000000123"
+    ])
+    func eventReadEndpointsAreUnavailable(path: String) async throws {
+        try await withApp(configure: { app in
+            try app.register(collection: AppStoreNotificationController())
+        }) { app in
+            try await app.testing().test(.GET, path, afterResponse: { res async in
+                #expect(res.status == .notFound)
+            })
+        }
     }
 
     @Test("Mail includes purchase account context")
