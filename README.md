@@ -64,7 +64,29 @@ The request body must be the Apple payload:
 }
 ```
 
-Notification events are stored in `app_store_notification_events` for internal inspection through the database — there are no HTTP endpoints for reading events
+Notification events are stored in `app_store_notification_events`
+
+### Read saved notifications
+
+Set `EVENTS_API_TOKEN` to a long random secret in the runtime environment and redeploy
+Generate one with `openssl rand -hex 32` and keep it private
+
+```bash
+curl 'https://YOUR_HOST/app-store/notifications/events?page=1&per=100' \
+  -H "Authorization: Bearer $EVENTS_API_TOKEN"
+```
+
+The response contains `items` and `metadata` (`page`, `per`, `total`)
+Fetch successive pages until all `total` records have been retrieved
+Results include all saved notification types and verification states, ordered oldest first with ID as a tie-breaker
+The default page size is 100 and the maximum is 250
+Pages are live database reads, so avoid deleting records while traversing them
+
+Each item includes transaction details, verification status, `mailStatus`, `mailError`, `mailAttemptedAt`, and `mailSentAt`
+Raw signed and decoded payloads are omitted and successful responses use `Cache-Control: no-store`
+Use HTTPS and send the token only in the Authorization header
+Missing or incorrect credentials return 401; an unset or blank `EVENTS_API_TOKEN` disables access with 503
+The Apple webhook POST endpoints do not require this token
 
 For notifications to identify an account in your own system, the app encodes the positive decimal billing user ID into a zero-padded UUID. For example, user `123` becomes `00000000-0000-0000-0000-000000000123`. The notifier decodes this value and includes the billing user ID in event emails. Apple doesn't provide the customer's Apple ID or email address
 
